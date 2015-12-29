@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, height=device-height">
+<title>Police and Thief</title>
+
+<link rel="stylesheet" href="./css/jquery.mobile.1.2.0.css" />
+<link rel="stylesheet" href="./css/jquery.mobile.theme-1.2.0.css" />
+<link rel="stylesheet" href="./css/jquery.mobile.structure-1.2.0.css" />
+<link rel="stylesheet" href="./css/style.css" />
+<script type="text/javascript" src="./js/lib/external/jquery-1.8.0.js"></script>
+<script type="text/javascript" src="./js/lib/external/jquery.mobile-1.2.0.js"></script>
+<script type="text/javascript" src="./js/lib/tlib/tlib.js"></script>
+<script type="text/javascript" src="./js/lib/tlib/tlib.logger.js"></script>
+<script type="text/javascript" src="./js/lib/tlib/tlib.view.js"></script>
+<script type="text/javascript" src="./js/lib/tlib/tlib.network.js"></script>
+<script type="text/javascript" src="./js/lib/tlib/tlib.ajax.js"></script>
+<script type="text/javascript" src="./js/googleMaps/googleLocation.js"></script>
+<script type="text/javascript" src="./js/googleMaps/googleDistance.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyBSoT1wqRczujvxKtreO6O7a4RJ-GF61o4&sensor=true"></script>
+<script type="text/javascript">
+var ID;
+var PWD;
+var lat;
+var lon;
+var map;
+$(function(){
+    $("#popbutton").click(function(){
+        $('div.modal').modal();
+    })
+});
+
+function login() {
+
+	var id = document.getElementById("user_id").value;
+	var pwd = document.getElementById("user_pw").value;
+	var xmlhttp = new XMLHttpRequest;
+
+	
+	document.getElementById("user_id").value = "";
+	document.getElementById("user_pw").value = "";
+	
+	if(id == "" || pwd == ""){
+		alert("Blank not Allowed!");
+		return ;
+	}
+		 
+	xmlhttp.onload = function() {
+		if(this.responseText == 'success'){
+			location.replace("#myseoul");
+			ID = id;
+			PWD = pwd;
+		}
+		else{
+			alert("Wrong Password!");
+		}
+	};
+	
+	xmlhttp.open("GET","http://cspro.sogang.ac.kr/~cse20121562/prj/login_check.php?user_id="+id+"&user_pw="+pwd, true);
+	xmlhttp.send();
+}
+function goReg(){
+	location.replace("#regPage");	
+}
+
+function regUser() {
+
+	var id = document.getElementById("reg_id").value;
+	var pwd = document.getElementById("reg_pw").value;
+	var pwd_check = document.getElementById("reg_check").value;
+	var email = document.getElementById("reg_email").value;
+
+	document.getElementById("reg_id").value = "";
+	document.getElementById("reg_pw").value = "";
+	document.getElementById("reg_check").value = "";
+	document.getElementById("reg_email").value = "";
+	if(id == "" || pwd == "" || pwd_check =="" || email == ""){
+		alert("Blank not Allowed!");
+		return ;
+	}
+	var xmlhttp2 = new XMLHttpRequest;
+	xmlhttp2.onload = function() {
+		if(this.responseText == 'success'){
+			location.replace("#main");	
+		}
+		else{
+			alert("Password doesn't Equal!");
+		}
+	};
+	
+	xmlhttp2.open("GET","http://cspro.sogang.ac.kr/~cse20121562/prj/register_check.php?user_id="+id+"&user_pass="+pwd+"&user_pass2="+pwd_check+"&user_email="+email, true);
+	xmlhttp2.send();
+}
+function upload(){
+
+	var upload = document.getElementById("myfile").files[0];
+    var formData = new FormData();
+	formData.append("upload",upload);
+    if(upload != null){
+	       var xmlhttp3 = new XMLHttpRequest;
+	    	xmlhttp3.onload = function() {
+	       if(this.responseText == 'success'){
+	          addMemo();
+	       }
+	       else{
+	          alert('Too big file');
+	       }
+	    };
+	    
+	    xmlhttp3.open("POST","http://cspro.sogang.ac.kr/~cse20121562/prj/upload.php",true);
+	    xmlhttp3.send(formData);
+    }
+    else{
+		addMemo();
+    }
+	
+}
+function addMemo(){
+
+	var id = ID;
+	var memo_title = document.getElementById("memo_title").value;
+	var memo_context = document.getElementById("memo_context").value;
+	var upload = document.getElementById("myfile").value;
+	
+   	upload = upload.split("\\");
+   	var file_name = upload[2];
+	
+    document.getElementById("memo_title").value = "";
+    document.getElementById("memo_context").value = "";
+    document.getElementById("myfile").value = "";
+    
+    if(memo_title =="" || memo_context == ""){
+       alert("Blank not Allowed!");
+       return ;
+    }
+    var xmlhttp4 = new XMLHttpRequest;
+    xmlhttp4.onload = function() {
+       if(this.responseText == 'success'){
+          alert('success');   
+          drawMarker();
+       }
+       else{
+          alert("??");
+       }
+    };
+    
+    xmlhttp4.open("GET","http://cspro.sogang.ac.kr/~cse20121562/prj/memo_save.php?user_id="+id+"&lat="+lat+"&lon="+lon+"&memo_title="+memo_title+"&memo_context="+memo_context+"&myfile="+file_name, true);
+    xmlhttp4.send();
+    
+}
+
+function drawMarker(){
+
+	var id = ID;
+
+	$.ajax({
+  		type: 'GET',
+  		url: 'http://cspro.sogang.ac.kr/~cse20121562/prj/memo_load.php?user_id='+id,
+  		success: function (data){
+  		    if (data != 'empty') {
+  		        for(i = 0 ; i < data.length ; i ++){
+					var la = parseFloat(data[i].lat);
+					var lo = parseFloat(data[i].lon);
+					var mcontext = data[i].mcontext;
+					var mtitle = data[i].mtitle;
+					var src = data[i].pic;
+					var marker = new google.maps.Marker({position: {lat: la,lng: lo},map: map,title: mtitle});
+					if(src == "http://cspro.sogang.ac.kr/~cse20121562/uploads/undefined"){
+						var infowindow = new google.maps.InfoWindow({
+						content: '<label>Title: </label>'+mtitle+'<br>'+'<label>Context: </label>'+mcontext
+						});
+					}
+					else{
+					var infowindow = new google.maps.InfoWindow({
+						content: '<label>Title: </label>'+mtitle+'<br><img src="'+src+'" width = "150px" height = "150px" data-rotate="90">'+'<br>'+'<label>Context: </label>'+mcontext
+                	});
+					}
+            		listenMarker(infowindow,marker);
+		  	  	}
+			}	
+  		}
+	});
+
+}
+
+
+function listenMarker(infowindow, marker){
+    google.maps.event.addListener(marker, 'click', function() {
+        infowindow.open(map, marker);
+    });
+}
+
+
+
+</script>
+
+
+</head>
+
+<body>
+	<div data-role="page" id="main" data-theme="d">
+		<div data-role="header" data-position="fixed" data-theme="d">
+			<h1 text-align="center">Login</h1>
+		</div>
+		<div data-role="content" data-theme="d">
+			<label>id</label><input type="text" id = "user_id">
+			<label>password</label><input type="password" id = "user_pw">
+			<br>
+			<button id="login" onclick="login()">Login</button><br><br>
+			<button id="register" onclick = "goReg()">Register</button>
+			
+		</div>
+	</div>
+
+	<div data-role="page" id="myseoul" data-theme="d">
+		<div data-role="header" data-position="fixed" data-theme="d">
+			<h1>Google Memo</h1>
+		</div>
+		<div id="my_canvas"></div>
+		
+		<button class="btn btn-default parbtn" style ="width:50%; height:20%" id="popbutton"><span class = "glyphicon glyphicon-plus"></span></button><button class = "btn btn-default parbtn" style ="width:50%; height:20%;"  id = "loading" onclick = "drawMarker()"><span class = "glyphicon glyphicon-refresh"></span></button></td> 
+		  
+		
+		
+		<br/>
+		
+		
+		
+		<div id="mo" class="modal fade">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">×</button>
+						<h4 class="modal-title">메모</h4>
+					</div>
+					<div class="modal-body">
+						제목 <input type="text" name="memo_title" id="memo_title">
+						내용
+						<textarea name="memo_context" id="memo_context"
+							class="form-control" rows="3"></textarea>
+						<input name="myfile" id="myfile" type="file">
+					</div>
+
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+						<button class="btn btn-primary" type="button" id="submit"
+							data-dismiss="modal" onclick="upload()">저장</button>
+					</div>
+
+				</div>
+			</div>
+		</div>
+
+		<div data-role="footer" data-position="fixed">
+			<div data-role="navbar">
+				<ul>
+					<li><a href="#main">Logout</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	
+	
+	<div data-role="page" id="regPage" data-theme="d">
+		<div data-role="header" data-position="fixed" data-theme="d">
+			<h1>Register</h1>
+		</div>
+		<div data-role="content" data-theme="d">
+			<label>id</label><input type="text" id = "reg_id">
+			<label>password</label><input type="password" id = "reg_pw">
+			<label>password_check</label><input type="password" id = "reg_check">
+			<label>email</label><input type="text" id = "reg_email">
+			<button id="register" value="Register" onclick="regUser()"></button>
+		</div>
+		<div data-role="footer" data-position="fixed">
+			<div data-role="navbar">
+				<ul>
+					<li><a href="#main">Home</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
